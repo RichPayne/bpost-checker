@@ -39,7 +39,8 @@ class CheckStatus:
         self.status = self.driver.find_element_by_class_name('heading').text
 
     def get_sender(self):
-        return self.driver.find_element_by_class_name('parceln').text
+        response =  self.driver.find_element_by_class_name('parceln').text
+        return response.split()[3]
 
     def detect_change(self):
         current_status = self.status
@@ -71,7 +72,7 @@ if __name__ == '__main__':
     id, pid = init()
     status = CheckStatus(id, pid)
     status.check()
-    print(f"Monitoring status of bpost package from {status.get_sender().split()[3]}...")
+    print(f"Monitoring status of bpost package from {status.get_sender()}...")
     while 1:
         sleep(1800)
         status.detect_change()
