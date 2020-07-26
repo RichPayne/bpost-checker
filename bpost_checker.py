@@ -6,23 +6,22 @@ from time import sleep
 from smtplib import SMTP
 from email.message import EmailMessage
 
-email_flag = 0
-
 
 def init():
     parser = ArgumentParser(
         description="Monitors status of your parcel every 30 minutes and alerts the user if there is an update.")
-    parser.add_argument("id", help="Tracking ID of parcel.")
+    parser.add_argument("tid", help="Tracking ID of parcel.")
     parser.add_argument("pid", help="Delivery postal code.")
     args = parser.parse_args()
 
-    return args.id, args.pid
+    return args.tid, args.pid, 0
 
 
 class CheckStatus:
-    def __init__(self, id, pid, *args):
+    def __init__(self, tid, pid, flag, *args):
         self.status = None
-        self.id = id
+        self.email_flag = flag
+        self.id = tid
         self.pid = pid
         self.url = f'https://track.bpost.cloud/btr/web/#/search?lang=en&itemCode={self.id}&postalCode={self.pid}'
         self.chrome_options = Options()
@@ -31,7 +30,7 @@ class CheckStatus:
         self.driver = webdriver.Chrome(executable_path=abspath("chromedriver"),
                                        options=self.chrome_options)
 
-        if email_flag:
+        if self.email_flag:
             self.email = Email(args[0], args[1])
 
     def check(self):
@@ -42,12 +41,15 @@ class CheckStatus:
         response =  self.driver.find_element_by_class_name('parceln').text
         return response.split()[3]
 
+    def set_email_flag(self, flag):
+        self.email_flag = flag
+
     def detect_change(self):
         current_status = self.status
         self.check()
         if not current_status == self.status:
             print(f"Package status has changed to: {self.status}.")
-            if email_flag:
+            if self.email_flag:
                 self.email.send(status)
 
 
@@ -69,8 +71,8 @@ class Email:
 
 
 if __name__ == '__main__':
-    id, pid = init()
-    status = CheckStatus(id, pid)
+    tid, pid, flag = init()
+    status = CheckStatus(tid, pid, flag)
     status.check()
     print(f"Monitoring status of bpost package from {status.get_sender()}...")
     while 1:
